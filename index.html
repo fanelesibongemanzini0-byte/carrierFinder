@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Course Finder</title>
+</head>
+<body>
+  <style>
+  :root {
+    --primary: #1e3a8a;
+    --primary-hover: #1e40af;
+    --accent: #2563eb;
+    --bg-color: #f8fafc;
+    --card-bg: #ffffff;
+    --text-main: #1e293b;
+    --text-muted: #64748b;
+    --border: #cbd5e1;
+    --radius: 8px;
+  }
+
+  body {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-main);
+    max-width: 750px;
+    margin: 40px auto;
+    padding: 0 20px;
+    line-height: 1.5;
+  }
+
+  h1 {
+    color: var(--primary);
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+  }
+
+  h2 {
+    color: var(--primary);
+    font-size: 1.25rem;
+  }
+
+  /* Container card styling */
+  #modeSelect, #quiz, #describeMode, #results {
+    background: var(--card-bg);
+    padding: 30px;
+    border-radius: var(--radius);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    margin-top: 20px;
+    border: 1px solid #e2e8f0;
+  }
+
+  /* Buttons */
+  button {
+    background-color: var(--primary);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    font-size: 1rem;
+    font-weight: 500;
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+    margin-right: 10px;
+    margin-top: 15px;
+  }
+
+  button:hover {
+    background-color: var(--primary-hover);
+  }
+
+  button:active {
+    transform: scale(0.98);
+  }
+
+  /* Secondary or Back buttons */
+  #backBtn, #describeBackBtn {
+    background-color: #e2e8f0;
+    color: var(--text-main);
+  }
+
+  #backBtn:hover, #describeBackBtn:hover {
+    background-color: #cbd5e1;
+  }
+
+  /* Options and Inputs */
+  #optionsArea label {
+    display: flex;
+    align-items: center;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    background: #f1f5f9;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+
+  #optionsArea label:hover {
+    background: #e2e8f0;
+  }
+
+  #optionsArea input[type="checkbox"],
+  #optionsArea input[type="radio"] {
+    margin-right: 12px;
+    transform: scale(1.1);
+  }
+
+  textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-family: inherit;
+    font-size: 1rem;
+    resize: vertical;
+    box-sizing: border-box;
+  }
+
+  textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+  }
+
+  /* Status messages */
+  #statusMsg, #describeStatus {
+    color: #dc2626;
+    font-weight: 500;
+    margin-top: 10px;
+  }
+
+  /* Results item cards */
+  #resultsList > div {
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    border-left: 4px solid var(--primary) !important;
+    border-radius: var(--radius) !important;
+    padding: 20px !important;
+    margin-bottom: 20px !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+  }
+
+  #resultsList h3 {
+    margin-top: 0;
+    color: var(--primary);
+  }
+</style>
+
+<h1>Find Your Course</h1>
+
+<div id="modeSelect">
+  <p>How would you like to get course suggestions?</p>
+  <button id="quizModeBtn">Take a Quick Quiz</button>
+  <button id="describeModeBtn">Describe Myself Instead</button>
+</div>
+
+<div id="quiz" style="display:none">
+  <p id="stepLabel"></p>
+  <h2 id="questionText"></h2>
+  <div id="optionsArea"></div>
+  <button id="backBtn">Back</button>
+  <button id="nextBtn">Next</button>
+  <p id="statusMsg"></p>
+</div>
+
+<div id="describeMode" style="display:none">
+  <h2>Tell us about yourself</h2>
+  <p>Mention the subjects you do at school and the kind of work that interests you - write as much or as little as you like.</p>
+  <textarea id="describeText" rows="6" cols="50" placeholder="e.g. I do Maths, Physical Science and English. I enjoy solving problems and I like the idea of working with computers."></textarea>
+  <br>
+  <button id="describeBackBtn">Back</button>
+  <button id="describeSubmitBtn">Get My Matches</button>
+  <p id="describeStatus"></p>
+</div>
+
+<div id="results" style="display:none">
+  <div id="resultsList"></div>
+  <button id="restartBtn">Start Over</button>
+</div>
+
+<script>
+
+// ---------------------------------------------------------------------------
+// Data
+// ---------------------------------------------------------------------------
+const SUBJECTS = ["English","IsiZulu","Mathematics","Mathematical Literacy","Physical Sciences","Life Sciences","Geography","History","Accounting","Economics","Business Studies","Life Orientation","Agricultural Sciences","Tourism"];
+
+const COURSES = [
+{"faculty":"Commerce, Administration and Law","title":"Higher Certificate (Accountancy)","years":1,"minPoints":22,"requirementsText":"NSC with an achievement rating of 22 points, English level 3, and Mathematical level 3 or Mathematics Literacy level 4","keySubjects":["English","Mathematics","Mathematical Literacy"],"careerTags":"accounting, bookkeeping, finance, numbers, auditing"},
+{"faculty":"Commerce, Administration and Law","title":"National Higher Certificate (Marketing)","years":1,"minPoints":22,"requirementsText":"NSC with an achievement rating of 22 points, English level 3, and Mathematical level 3 or Mathematics Literacy level 4","keySubjects":["English","Mathematics","Mathematical Literacy"],"careerTags":"marketing, advertising, sales, branding, business"},
+{"faculty":"Commerce, Administration and Law","title":"Diploma in Logistics Management","years":3,"minPoints":24,"requirementsText":"NSC with an achievement rating of 24 points, English HL level 3, Mathematical Literacy level 3 or 4","keySubjects":["English","Mathematics","Mathematical Literacy"],"careerTags":"logistics, supply chain, transport, warehousing, operations"},
+{"faculty":"Commerce, Administration and Law","title":"Diploma in Management of Co-operatives","years":3,"minPoints":24,"requirementsText":"NSC with an achievement rating of 24 points, English level 3, and Mathematics Literacy level 4 or Mathematics level 3","keySubjects":["English","Mathematics","Mathematical Literacy"],"careerTags":"management, business, cooperatives, community development, entrepreneurship"},
+{"faculty":"Commerce, Administration and Law","title":"Diploma in Transport Management","years":3,"minPoints":24,"requirementsText":"NSC with an achievement rating of 24 points, English level 3, Mathematical level 3 or Mathematics Literacy level 4","keySubjects":["English","Mathematics","Mathematical Literacy"],"careerTags":"transport, logistics, fleet management, operations"},
+{"faculty":"Commerce, Administration and Law","title":"Bachelor of Commerce (Accounting)","years":3,"minPoints":28,"requirementsText":"NSC with degree endorsement and 28 points, English level 4 and Mathematics level 4","keySubjects":["English","Mathematics"],"careerTags":"accounting, auditing, finance, tax, numbers"},
+{"faculty":"Commerce, Administration and Law","title":"Bachelor of Commerce (Accounting Science)","years":4,"minPoints":32,"requirementsText":"NSC with degree endorsement and 32 points, English level 5, Maths level 5","keySubjects":["English","Mathematics"],"careerTags":"accounting, finance, chartered accountant, auditing, numbers"},
+{"faculty":"Commerce, Administration and Law","title":"Bachelor of Commerce 4-Year Extended Programme","years":4,"minPoints":26,"requirementsText":"NSC with degree endorsement and 26 points, English level 3, and Mathematics level 3 or Mathematical Literacy level 4","keySubjects":["English","Mathematics","Mathematical Literacy"],"careerTags":"business, commerce, finance, management"},
+{"faculty":"Commerce, Administration and Law","title":"Bachelor of Commerce","years":3,"minPoints":28,"requirementsText":"NSC with degree endorsement and 28 points, English level 4, and Mathematics level 3 or Maths Literacy 6","keySubjects":["English","Mathematics","Mathematical Literacy"],"careerTags":"business, commerce, finance, management, economics"},
+{"faculty":"Commerce, Administration and Law","title":"Bachelor of Commerce (Management Information Systems)","years":3,"minPoints":28,"requirementsText":"NSC with degree endorsement and 28 points, English level 4, and Mathematics level 4","keySubjects":["English","Mathematics"],"careerTags":"IT, information systems, computers, software, business technology, data"},
+{"faculty":"Commerce, Administration and Law","title":"Bachelor of Administration","years":3,"minPoints":28,"requirementsText":"NSC with degree endorsement and 28 points, English level 4, and Mathematics level 3 or Maths Literacy 4","keySubjects":["English","Mathematics","Mathematical Literacy"],"careerTags":"public administration, government, management, policy"},
+{"faculty":"Commerce, Administration and Law","title":"Bachelor of Laws","years":4,"minPoints":30,"requirementsText":"NSC with degree endorsement and 30 points, English level 4, and Mathematics level 3 or Maths Literacy 4","keySubjects":["English","Mathematics","Mathematical Literacy"],"careerTags":"law, legal, justice, advocacy, court, attorney"},
+{"faculty":"Science and Agriculture","title":"BSc: Mainstream","years":3,"minPoints":28,"requirementsText":"14 Departments, focused BSc programmes and 37 dual major programmes. Requires 50-60% in Mathematics and at least 50% in English.","keySubjects":["English","Mathematics","Physical Sciences","Life Sciences"],"careerTags":"science, research, computer science, biology, chemistry, physics, laboratory, data"},
+{"faculty":"Science and Agriculture","title":"BSc: Agriculture (Agronomy / Animal / Agribusiness)","years":4,"minPoints":28,"requirementsText":"NSC pass with at least 50% in Mathematics, Physics / Geography, Agricultural Sciences/Life Sciences and English","keySubjects":["English","Mathematics","Agricultural Sciences","Life Sciences"],"careerTags":"agriculture, farming, animal science, agribusiness, environment"},
+{"faculty":"Science and Agriculture","title":"BSc: Augmented Stream","years":4,"minPoints":28,"requirementsText":"For candidates with 28 NSC points with 40% in Maths, Agricultural Science, Life Science, Physical Sciences and/or Geography, and English.","keySubjects":["English","Mathematics","Agricultural Sciences","Life Sciences","Physical Sciences"],"careerTags":"science, agriculture, research, foundation, biology"},
+{"faculty":"Science and Agriculture","title":"BSc: Foundation Stream","years":4,"minPoints":26,"requirementsText":"At least 26 points and at least 40% in one of the Agricultural Sciences, Mathematics, English, and Physics.","keySubjects":["English","Mathematics","Agricultural Sciences","Physical Sciences"],"careerTags":"science, agriculture, foundation, research"},
+{"faculty":"Science and Agriculture","title":"Environmental Planning & Development (BSc)","years":4,"minPoints":26,"requirementsText":"NSC-Deg with level 4 for English at Home Language or level 3 First Additional Language and Geography 50%","keySubjects":["English","Geography"],"careerTags":"environment, planning, urban development, sustainability, geography"},
+{"faculty":"Science and Agriculture","title":"B Consumer Science: Extension and Rural Development","years":4,"minPoints":28,"requirementsText":"Minimum 28 points and a pass of at least 50% in English, Life Sciences/Agric and Life Orientation.","keySubjects":["English","Life Sciences","Agricultural Sciences","Life Orientation"],"careerTags":"community development, rural development, agriculture, extension services"},
+{"faculty":"Science and Agriculture","title":"B Consumer Science: Hospitality and Tourism","years":3,"minPoints":28,"requirementsText":"Minimum 28 points, and a pass of at least 50% in English and Life Orientation.","keySubjects":["English","Life Orientation","Tourism"],"careerTags":"hospitality, tourism, hotel management, events, travel"},
+{"faculty":"Science and Agriculture","title":"Diploma in Sport and Exercise Technology","years":3,"minPoints":26,"requirementsText":"At least 26 points, a pass of at least 40% in four recognised subjects, and at least 40-50% for English.","keySubjects":["English","Life Orientation"],"careerTags":"sport, fitness, exercise science, health, coaching"},
+{"faculty":"Science and Agriculture","title":"Diploma in Hospitality Management","years":3,"minPoints":26,"requirementsText":"A pass of at least 40% in four recognised subjects, and a pass of at least 50% for English.","keySubjects":["English","Tourism"],"careerTags":"hospitality, hotel management, catering, tourism, events"},
+{"faculty":"Arts","title":"BA (General)","years":3,"minPoints":26,"requirementsText":"An achievement rating of 3 (40-49%) or better in 4 recognised subjects; 4 (50-59%) in Life Orientation and English.","keySubjects":["English","Life Orientation"],"careerTags":"humanities, languages, social science, writing, general arts"},
+{"faculty":"Arts","title":"BA Correctional Studies","years":3,"minPoints":28,"requirementsText":"An achievement rating of 3 (40-49%) or better in 4 recognised subjects; 4 (50-59%) in Life Orientation and English.","keySubjects":["English","Life Orientation"],"careerTags":"corrections, criminal justice, law enforcement, rehabilitation, social work"},
+{"faculty":"Arts","title":"BA Development Studies","years":3,"minPoints":26,"requirementsText":"An achievement rating of 3 (40-49%) or better in 4 recognised subjects; 4 (50-59%) in Life Orientation and English.","keySubjects":["English","Life Orientation"],"careerTags":"development, community, NGO, policy, social change"},
+{"faculty":"Arts","title":"BA Environmental Planning & Development","years":3,"minPoints":26,"requirementsText":"NSC with Degree Endorsement and an achievement rating of 4 (50-59%) in English and Geography","keySubjects":["English","Geography"],"careerTags":"environment, planning, urban development, geography, sustainability"},
+{"faculty":"Arts","title":"BA Industrial Sociology","years":3,"minPoints":26,"requirementsText":"An achievement rating of 3 (40-49%) or better in 4 recognised subjects; 4 (50-59%) in Life Orientation and English.","keySubjects":["English","Life Orientation"],"careerTags":"sociology, human resources, labour relations, workplace, people"},
+{"faculty":"Arts","title":"BA Intercultural Communication","years":3,"minPoints":26,"requirementsText":"An achievement rating of 4 (50-59%) in 4 recognised subjects; 4 (50-59%) in Life Orientation; English Home Language 4 or FAL 3.","keySubjects":["English","Life Orientation"],"careerTags":"communication, media, culture, languages, journalism"},
+{"faculty":"Arts","title":"BA Information Science","years":3,"minPoints":26,"requirementsText":"An achievement rating of 3 (40-49%) or better in 4 recognised subjects; 4 (50-59%) in Life Orientation and English.","keySubjects":["English","Life Orientation"],"careerTags":"information science, data, records, research, IT"},
+{"faculty":"Arts","title":"Bachelor of Library and Information Science","years":4,"minPoints":26,"requirementsText":"An achievement rating of 3 (40-49%) or better in 4 recognised subjects; 4 (50-59%) in Life Orientation and English.","keySubjects":["English","Life Orientation"],"careerTags":"library science, information management, archives, research"},
+{"faculty":"Arts","title":"BA Psychology","years":3,"minPoints":28,"requirementsText":"NSC with degree endorsement OR Matric Exemption, 4 (50-59%) in English, Social Science and Physics. Interview required.","keySubjects":["English"],"careerTags":"psychology, counselling, mental health, helping people, therapy"},
+{"faculty":"Arts","title":"BSocSci in Political & International Studies","years":3,"minPoints":30,"requirementsText":"5 (60-69%) in English and Geography, 4 (50-59%) in Mathematics or 5 in Maths Literacy; 5 in History or Economics.","keySubjects":["English","Geography","Mathematics","Mathematical Literacy","History","Economics"],"careerTags":"politics, government, diplomacy, international relations, policy"},
+{"faculty":"Arts","title":"BA Drama, Theatre & Performance","years":3,"minPoints":26,"requirementsText":"An achievement rating of 3 (40-49%) or better in 4 recognised subjects; 4 (50-59%) in Life Orientation and English.","keySubjects":["English","Life Orientation"],"careerTags":"drama, theatre, performance, acting, arts, creative"},
+{"faculty":"Arts","title":"Bachelor of Tourism Studies","years":3,"minPoints":26,"requirementsText":"NSC with degree endorsement OR Matric Exemption, 4 (50-59%) in English and Geography or Tourism.","keySubjects":["English","Geography","Tourism"],"careerTags":"tourism, travel, hospitality, events, destination management"},
+{"faculty":"Arts","title":"Diploma in Tourism Management","years":3,"minPoints":24,"requirementsText":"4 (50-59%) in English and appropriate subject combinations. Alternatively a Higher Certificate in a cognate field.","keySubjects":["English","Tourism","Geography"],"careerTags":"tourism, travel, hospitality management, events"},
+{"faculty":"Arts","title":"Diploma in Media Studies","years":3,"minPoints":24,"requirementsText":"An achievement rating of 3 (40-49%) or better in 4 recognised subjects; 4 (50-59%) in Life Orientation and English.","keySubjects":["English","Life Orientation"],"careerTags":"media, journalism, film, broadcasting, communication"},
+{"faculty":"Arts","title":"Diploma in Public Relations Management","years":3,"minPoints":24,"requirementsText":"An achievement rating of 3 (40-49%) or better in 4 recognised subjects; 4 (50-59%) in Life Orientation and English.","keySubjects":["English","Life Orientation"],"careerTags":"public relations, communications, marketing, media, branding"},
+{"faculty":"Education","title":"Bachelor of Education in Foundation Phase Teaching","years":4,"minPoints":26,"requirementsText":"NSC pass with Isizulu HL 4, English FAL 4, Maths 3/Maths Lit 4","keySubjects":["IsiZulu","English","Mathematics","Mathematical Literacy"],"careerTags":"teaching, early childhood, foundation phase, primary school, education"},
+{"faculty":"Education","title":"Bachelor of Education in Intermediate Phase Teaching: Languages and Humanities","years":4,"minPoints":26,"requirementsText":"NSC pass with IsiZulu 4, English 4, Geography and History 4","keySubjects":["IsiZulu","English","Geography","History"],"careerTags":"teaching, intermediate phase, primary school, languages, humanities, education"},
+{"faculty":"Education","title":"Bachelor of Education in Intermediate Phase Teaching: Languages, Maths, Science & Technology","years":4,"minPoints":26,"requirementsText":"NSC pass with IsiZulu FAL/HL 4, English HL/FAL 4, Maths 4 and Physical Science 3 (or Maths 3 and Physical Science 4)","keySubjects":["IsiZulu","English","Mathematics","Physical Sciences"],"careerTags":"teaching, intermediate phase, mathematics, science, technology, education"},
+{"faculty":"Education","title":"Bachelor of Education in Senior & FET Phase Teaching (Social Science Education)","years":4,"minPoints":26,"requirementsText":"NSC pass with English, Geography and History all at 4","keySubjects":["English","Geography","History"],"careerTags":"teaching, high school, social science, history, geography, education"},
+{"faculty":"Education","title":"Bachelor of Education in Senior & FET Phase Teaching (Maths, Science & Technology Education)","years":4,"minPoints":26,"requirementsText":"NSC pass with English 4, Maths 5 and Physical Science 4 (or Maths 4 and Physical Science 5)","keySubjects":["English","Mathematics","Physical Sciences"],"careerTags":"teaching, high school, mathematics, science, technology, education"},
+{"faculty":"Education","title":"Bachelor of Education in Senior Phase & FET Teaching (Economics and Management Sciences)","years":4,"minPoints":26,"requirementsText":"NSC pass with English 4, Accounting, Business Studies and Economics all at 4","keySubjects":["English","Accounting","Business Studies","Economics"],"careerTags":"teaching, high school, economics, business, accounting, education"}
+];
+
+// ---------------------------------------------------------------------------
+// Quiz questions
+// ---------------------------------------------------------------------------
+const CHOICE_QUESTIONS = [
+  {
+    id: "task_preference",
+    text: "Which of these best describes what you enjoy doing?",
+    options: [
+      { label: "Working with numbers, budgets or financial data", tags: "accounting finance numbers bookkeeping auditing" },
+      { label: "Helping and caring for people", tags: "helping people counselling mental health therapy health" },
+      { label: "Solving problems with computers and technology", tags: "computers IT software information systems data" },
+      { label: "Teaching or working with children and students", tags: "teaching education" },
+      { label: "Science, research and discovery", tags: "science research biology chemistry physics laboratory" },
+      { label: "Law, justice and standing up for people", tags: "law legal justice advocacy" },
+      { label: "Business, management and leadership", tags: "business management commerce" },
+      { label: "Creative work like drama, media or design", tags: "drama media creative communication journalism" },
+      { label: "Agriculture, farming and the environment", tags: "agriculture farming environment sustainability" },
+      { label: "Tourism, hospitality and events", tags: "tourism hospitality travel events" }
+    ]
+  },
+  {
+    id: "work_setting",
+    text: "Which work setting appeals to you most?",
+    options: [
+      { label: "An office or corporate environment", tags: "business management finance" },
+      { label: "Outdoors or on a farm", tags: "agriculture environment farming" },
+      { label: "A science laboratory", tags: "science research laboratory" },
+      { label: "A classroom", tags: "teaching education" },
+      { label: "A courtroom or legal office", tags: "law legal justice" },
+      { label: "A hospital or clinic", tags: "health helping people" },
+      { label: "A media studio or newsroom", tags: "media communication journalism" },
+      { label: "A hotel, resort or event venue", tags: "tourism hospitality events" }
+    ]
+  },
+  {
+    id: "orientation",
+    text: "Which of these excites you more?",
+    options: [
+      { label: "Working directly with people", tags: "helping people communication teaching" },
+      { label: "Working with data, numbers or systems", tags: "data numbers computers IT" },
+      { label: "Working with your hands or on practical, technical tasks", tags: "agriculture laboratory technology" },
+      { label: "Working with ideas, words or creative expression", tags: "creative writing drama media" }
+    ]
+  },
+  {
+    id: "motivation",
+    text: "What matters most to you in a career?",
+    options: [
+      { label: "A stable, well-paying career", tags: "business finance accounting management" },
+      { label: "Helping and impacting people's lives", tags: "helping people health education" },
+      { label: "Discovering new things and intellectual challenge", tags: "science research" },
+      { label: "Creative freedom and self-expression", tags: "creative drama media" },
+      { label: "Leadership and influence", tags: "management business politics" }
+    ]
+  }
+];
+
+// ---------------------------------------------------------------------------
+// Matching logic
+// ---------------------------------------------------------------------------
+function normalize(t) { return (t || "").trim().toLowerCase(); }
+
+function subjectMatchScore(selectedLower, course) {
+  const key = course.keySubjects || [];
+  if (!key.length) return { score: 0, matched: [] };
+  const matched = key.filter(function (s) { return selectedLower.has(normalize(s)); });
+  return { score: matched.length / key.length, matched: matched };
+}
+
+function careerMatchScore(interestText, course) {
+  const tags = (course.careerTags || "").split(",").map(function (t) { return t.trim(); }).filter(Boolean);
+  if (!tags.length || !interestText) return { score: 0, matched: [] };
+  const interestLower = normalize(interestText);
+  const matched = tags.filter(function (tag) { return interestLower.indexOf(tag.toLowerCase()) !== -1; });
+  return { score: matched.length / tags.length, matched: matched };
+}
+
+function findMatchingCourses(selectedSubjects, interestText) {
+  const selectedLower = new Set(selectedSubjects.map(normalize));
+  const results = COURSES.map(function (course) {
+    const s = subjectMatchScore(selectedLower, course);
+    const c = careerMatchScore(interestText, course);
+    return {
+      course: course,
+      score: s.score * 0.6 + c.score * 0.4,
+      matchedSubjects: s.matched,
+      matchedCareerTags: c.matched
+    };
+  });
+  const hasInput = selectedSubjects.length > 0 || (interestText && interestText.trim());
+  const filtered = hasInput ? results.filter(function (r) { return r.score > 0; }) : results;
+  filtered.sort(function (a, b) { return b.score - a.score; });
+  return filtered.slice(0, 5);
+}
+
+// ---------------------------------------------------------------------------
+// Descriptions for interest/career tags - used to explain a matched area
+// rather than just listing the bare keyword.
+// ---------------------------------------------------------------------------
+const TAG_DESCRIPTIONS = {
+  "accounting": "This field is about recording, analysing and reporting on money moving through a business - a core skill behind almost every company's finances.",
+  "finance": "This field deals with managing money - budgets, investments, and financial planning for individuals or organisations.",
+  "numbers": "This area involves working closely with figures and calculations as a core part of the job.",
+  "bookkeeping": "This field is about keeping accurate day-to-day financial records for a business.",
+  "auditing": "This field involves independently checking financial records to make sure they're accurate and honest.",
+  "computers": "This field is about working with computer systems, hardware and technology to solve problems.",
+  "IT": "This field (Information Technology) is about designing, building and maintaining the systems and software organisations rely on.",
+  "software": "This field is about designing, building and maintaining computer programs and applications.",
+  "information systems": "This field combines technology and business - using computer systems to help organisations run better.",
+  "data": "This field involves collecting, organising and making sense of information to help people make decisions.",
+  "helping people": "This field is centred on directly supporting and caring for others.",
+  "counselling": "This field involves listening to people and helping them work through personal or emotional challenges.",
+  "mental health": "This field focuses on supporting people's psychological wellbeing.",
+  "therapy": "This field involves helping people recover, cope or improve through structured support and treatment.",
+  "health": "This field is about caring for people's physical or mental wellbeing.",
+  "teaching": "This field is about helping others learn - explaining, guiding and mentoring students.",
+  "education": "This field involves shaping how people learn, from classroom teaching to designing how subjects are taught.",
+  "science": "This field is about investigating how the world works through observation, experiments and evidence.",
+  "research": "This field involves systematically investigating a topic to build new knowledge or solve a problem.",
+  "biology": "This field is the study of living things - from cells to entire ecosystems.",
+  "chemistry": "This field is the study of substances, how they're structured, and how they react with each other.",
+  "physics": "This field is the study of matter, energy, and the fundamental rules that govern the physical world.",
+  "laboratory": "This field involves hands-on practical work, running experiments and tests in a controlled setting.",
+  "law": "This field is about the rules that govern society, and representing or advising people within that system.",
+  "legal": "This field involves interpreting and applying laws to real situations.",
+  "justice": "This field is about ensuring fairness and accountability within society's systems.",
+  "advocacy": "This field is about representing and standing up for people's rights and interests.",
+  "business": "This field is about running, growing and managing organisations.",
+  "management": "This field is about leading people, projects or resources toward a goal.",
+  "commerce": "This field covers trade, business and the exchange of goods and services.",
+  "drama": "This field is about performance, storytelling and bringing characters or ideas to life on stage.",
+  "media": "This field is about producing and sharing content - news, video, or online material - for an audience.",
+  "creative": "This field is about generating original ideas, designs or works of art.",
+  "communication": "This field is about clearly sharing ideas and information, often across teams, audiences or platforms.",
+  "journalism": "This field is about researching and reporting news and stories to inform the public.",
+  "agriculture": "This field is about farming, food production and managing land and livestock.",
+  "farming": "This field involves growing crops or raising animals for food and resources.",
+  "environment": "This field is about understanding and protecting the natural world.",
+  "sustainability": "This field focuses on using resources responsibly so they last for future generations.",
+  "tourism": "This field is about the travel and visitor industry - helping people explore and experience new places.",
+  "hospitality": "This field is about looking after guests - in hotels, restaurants, and events.",
+  "travel": "This field involves helping people plan, book, or experience journeys and destinations.",
+  "events": "This field is about planning and running gatherings, from conferences to weddings to festivals.",
+  "technology": "This field is about applying tools, machinery or technical systems to get practical work done.",
+  "writing": "This field is about crafting words clearly and persuasively - for stories, articles, or communication.",
+  "politics": "This field is about how decisions get made in society - government, policy and public life.",
+};
+
+function describeTag(tag) {
+  const key = tag.trim();
+  if (TAG_DESCRIPTIONS[key]) return TAG_DESCRIPTIONS[key];
+  const lower = key.toLowerCase();
+  if (TAG_DESCRIPTIONS[lower]) return TAG_DESCRIPTIONS[lower];
+  return "An area of work connected to " + key + ".";
+}
+
+// ---------------------------------------------------------------------------
+// Quiz state + rendering
+// ---------------------------------------------------------------------------
+let selectedSubjects = new Set();
+let choiceAnswers = {};
+let currentStep = 0;
+const TOTAL_STEPS = 1 + CHOICE_QUESTIONS.length;
+
+const stepLabel = document.getElementById("stepLabel");
+const questionText = document.getElementById("questionText");
+const optionsArea = document.getElementById("optionsArea");
+const backBtn = document.getElementById("backBtn");
+const nextBtn = document.getElementById("nextBtn");
+const statusMsg = document.getElementById("statusMsg");
+const quizDiv = document.getElementById("quiz");
+const resultsDiv = document.getElementById("results");
+const resultsList = document.getElementById("resultsList");
+const restartBtn = document.getElementById("restartBtn");
+
+const modeSelectDiv = document.getElementById("modeSelect");
+const quizModeBtn = document.getElementById("quizModeBtn");
+const describeModeBtn = document.getElementById("describeModeBtn");
+const describeDiv = document.getElementById("describeMode");
+const describeText = document.getElementById("describeText");
+const describeBackBtn = document.getElementById("describeBackBtn");
+const describeSubmitBtn = document.getElementById("describeSubmitBtn");
+const describeStatus = document.getElementById("describeStatus");
+
+// ---------------------------------------------------------------------------
+// Mode selection
+// ---------------------------------------------------------------------------
+quizModeBtn.addEventListener("click", function () {
+  modeSelectDiv.style.display = "none";
+  quizDiv.style.display = "block";
+  currentStep = 0;
+  selectedSubjects = new Set();
+  choiceAnswers = {};
+  renderStep();
+});
+
+describeModeBtn.addEventListener("click", function () {
+  modeSelectDiv.style.display = "none";
+  describeDiv.style.display = "block";
+});
+
+describeBackBtn.addEventListener("click", function () {
+  describeDiv.style.display = "none";
+  modeSelectDiv.style.display = "block";
+  describeStatus.textContent = "";
+});
+
+describeSubmitBtn.addEventListener("click", function () {
+  const text = describeText.value.trim();
+  if (!text) {
+    describeStatus.textContent = "Please write a few sentences about yourself first.";
+    return;
+  }
+
+  // Pull out any subjects the student mentioned by name, so subject
+  // matching still works even without the quiz's checkbox step.
+  const textLower = text.toLowerCase();
+  const mentionedSubjects = SUBJECTS.filter(function (s) {
+    return textLower.indexOf(s.toLowerCase()) !== -1;
+  });
+
+  const results = findMatchingCourses(mentionedSubjects, text);
+  describeDiv.style.display = "none";
+  renderResults(results, [], mentionedSubjects);
+});
+
+function renderStep() {
+  statusMsg.textContent = "";
+  stepLabel.textContent = "Question " + (currentStep + 1) + " of " + TOTAL_STEPS;
+  backBtn.style.display = currentStep === 0 ? "none" : "inline-block";
+  nextBtn.textContent = currentStep === TOTAL_STEPS - 1 ? "Submit" : "Next";
+
+  if (currentStep === 0) {
+    renderSubjectStep();
+  } else {
+    renderChoiceStep(CHOICE_QUESTIONS[currentStep - 1]);
+  }
+}
+
+function renderSubjectStep() {
+  questionText.textContent = "Which subjects did you do at school? (select all that apply)";
+  optionsArea.innerHTML = "";
+  SUBJECTS.forEach(function (name) {
+    const label = document.createElement("label");
+    label.style.display = "block";
+    const box = document.createElement("input");
+    box.type = "checkbox";
+    box.checked = selectedSubjects.has(name);
+    box.addEventListener("change", function () {
+      if (box.checked) { selectedSubjects.add(name); } else { selectedSubjects.delete(name); }
+    });
+    label.appendChild(box);
+    label.appendChild(document.createTextNode(" " + name));
+    optionsArea.appendChild(label);
+  });
+}
+
+function renderChoiceStep(question) {
+  questionText.textContent = question.text;
+  optionsArea.innerHTML = "";
+  question.options.forEach(function (opt) {
+    const label = document.createElement("label");
+    label.style.display = "block";
+    const radio = document.createElement("input");
+    radio.type = "radio";
+    radio.name = question.id;
+    radio.checked = choiceAnswers[question.id] && choiceAnswers[question.id].tags === opt.tags;
+    radio.addEventListener("change", function () {
+      choiceAnswers[question.id] = { label: opt.label, tags: opt.tags };
+    });
+    label.appendChild(radio);
+    label.appendChild(document.createTextNode(" " + opt.label));
+    optionsArea.appendChild(label);
+  });
+}
+
+backBtn.addEventListener("click", function () {
+  if (currentStep > 0) { currentStep -= 1; renderStep(); }
+});
+
+nextBtn.addEventListener("click", function () {
+  if (currentStep === 0 && selectedSubjects.size === 0) {
+    statusMsg.textContent = "Select at least one subject to continue.";
+    return;
+  }
+  if (currentStep > 0) {
+    const q = CHOICE_QUESTIONS[currentStep - 1];
+    if (!choiceAnswers[q.id]) {
+      statusMsg.textContent = "Pick an option to continue.";
+      return;
+    }
+  }
+  if (currentStep === TOTAL_STEPS - 1) {
+    submitQuiz();
+  } else {
+    currentStep += 1;
+    renderStep();
+  }
+});
+
+restartBtn.addEventListener("click", function () {
+  selectedSubjects = new Set();
+  choiceAnswers = {};
+  currentStep = 0;
+  describeText.value = "";
+  resultsDiv.style.display = "none";
+  modeSelectDiv.style.display = "block";
+});
+
+function submitQuiz() {
+  const subjects = Array.from(selectedSubjects);
+  const answerValues = Object.keys(choiceAnswers).map(function (k) { return choiceAnswers[k]; });
+  const interest = answerValues.map(function (a) { return a.tags; }).join(" ");
+  const labels = answerValues.map(function (a) { return a.label; });
+  const results = findMatchingCourses(subjects, interest);
+  quizDiv.style.display = "none";
+  renderResults(results, labels, subjects);
+}
+
+function renderResults(results, labels, subjectsUsed) {
+  resultsDiv.style.display = "block";
+  resultsList.innerHTML = "";
+
+  const summary = document.createElement("p");
+  const parts = [];
+  if (subjectsUsed && subjectsUsed.length) {
+    parts.push("did subjects like " + subjectsUsed.slice(0, 3).join(", ") + (subjectsUsed.length > 3 ? ", among others" : ""));
+  }
+  if (labels && labels.length) {
+    parts.push("you're drawn to " + labels.join(" and, more specifically, ").toLowerCase());
+  }
+  const summaryText = parts.length
+    ? "Based on what you told us - you " + parts.join(", and ") + " - here are some fields and courses worth considering."
+    : "Based on what you told us about yourself, here are some fields and courses worth considering.";
+  summary.textContent = summaryText;
+  resultsList.appendChild(summary);
+
+  if (!results.length) {
+    const p = document.createElement("p");
+    p.textContent = "No strong matches found. Try starting over with different answers.";
+    resultsList.appendChild(p);
+    return;
+  }
+
+  results.forEach(function (r) {
+    const c = r.course;
+    const pct = Math.round(r.score * 100);
+    const div = document.createElement("div");
+    div.style.border = "1px solid #ccc";
+    div.style.padding = "10px";
+    div.style.marginBottom = "10px";
+
+    const topTags = r.matchedCareerTags.slice(0, 3);
+    let tagsHtml = "";
+    if (topTags.length) {
+      tagsHtml = "<p><strong>Areas that matched:</strong></p><ul>" +
+        topTags.map(function (tag) {
+          return "<li><strong>" + escapeHtml(tag) + "</strong> - " + escapeHtml(describeTag(tag)) + "</li>";
+        }).join("") +
+        "</ul>";
+    }
+
+    div.innerHTML =
+      "<strong>" + pct + "% match</strong><br>" +
+      "<strong>" + escapeHtml(c.title) + "</strong><br>" +
+      escapeHtml(c.faculty) + "<br>" +
+      c.years + " year(s) - Minimum " + c.minPoints + " admission points<br>" +
+      tagsHtml +
+      escapeHtml(c.requirementsText);
+
+    resultsList.appendChild(div);
+  });
+}
+
+function escapeHtml(str) {
+  return String(str == null ? "" : str).replace(/[&<>"']/g, function (c) {
+    return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+  });
+}
+
+</script>
+</body>
+</html>
